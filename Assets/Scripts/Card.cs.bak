@@ -136,21 +136,10 @@ public class Card : MonoBehaviour {
 
 	bool isCorrect() {
 		int index = 0;
-		string value1 = "";
-		string value2 = "";
 		for (int i=0; i < CreateBoard.currentlyDesired.Count; i++) {
 			for (int j=0; j < CreateBoard.currentlySelected.Count; j++) {
 				if (CreateBoard.currentlyDesired[i].GetComponent<Card>().value == CreateBoard.currentlySelected[j].GetComponent<Card>().value) {
-					if (index == 0) {
-						value1 = CreateBoard.currentlyDesired[i].GetComponent<Card>().value;
-						index++;
-					}
-					if (index == 1) {
-						value2 = CreateBoard.currentlyDesired[i].GetComponent<Card>().value;
-						if (value1 != value2) {
-							index++;
-						}
-					}
+					index++;
 				}
 			}
 		}
