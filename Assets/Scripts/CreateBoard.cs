@@ -5,12 +5,19 @@ using System;
 
 public class CreateBoard : MonoBehaviour {
 
-	protected static GameObject PausePanel;
+	public GameObject smiley;
+	public GameObject outline;
+//	protected static GameObject PausePanel;
+	//protected static GameObject ResultsPanel;
 	protected static List<GameObject> BOARD;
 	public static List<GameObject> currentlySelected;
 	public static List<GameObject> currentlyDesired;
+	public static List<string> guesses;
+	public static List<int> alreadyPicked;
 
 	public static int score;
+	public static int matches;
+	public static int timer;
 	public static bool reset;
 	public static int numberChoose;
 	
@@ -23,18 +30,29 @@ public class CreateBoard : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+		outline = GameObject.Find ("outline");
+		//PausePanel = GameObject.Find ("PausePanel");
+		//ResultsPanel = GameObject.Find ("ResultsPanel");
+		smiley = GameObject.Find ("smiley");
 		if (LoadSave.words == null || LoadSave.words.Count <= 0) {
 			LoadSave.loadFile ();
 		}
 
-		PausePanel = GameObject.Find ("PausePanel");
-		PausePanel.SetActive (false);
 
+		//if (PausePanel != null)
+//			PausePanel.transform.position = new Vector2 (-100f, 0f);
+		//if (ResultsPanel != null)
+			//ResultsPanel.transform.position = new Vector2 (-100f, 0f);
+		EndMatch ();
 		StartAgain ();
 	}
 
-	
+	public static void EndMatch() {
+		alreadyPicked = new List<int> ();
+	}
+
 	public void StartAgain() {
+		Panels.setGridPanel (true);
 		reset = false;
 
 		currentlySelected = new List<GameObject>();
@@ -42,7 +60,7 @@ public class CreateBoard : MonoBehaviour {
 		wordValues = new List<Emoji> ();
 		someValues = new List<Emoji> ();
 		numberChoose = 0;
-		score = 0;
+		//score = 0;
 		index = 0;
 
 		if (BOARD == null)
@@ -50,7 +68,13 @@ public class CreateBoard : MonoBehaviour {
 
 		// destroy all cards
 		for (int i=0; i < BOARD.Count; i++) {
-			Destroy (BOARD[i]);
+			GameObject tile = BOARD[i];
+			if (tile != null) {
+				for (int c=0; c < tile.transform.childCount; c++) {
+					Destroy(tile.transform.GetChild(c).gameObject);
+				}
+				Destroy (tile);
+			}
 		}
 
 		BOARD = new List<GameObject>();
@@ -61,18 +85,19 @@ public class CreateBoard : MonoBehaviour {
 		currentlySelected = new List<GameObject>();
 		currentlyDesired = new List<GameObject>();
 
+		guesses = new List<string>();
+
 		createBoardWords ();
 		createCards (Constants.ROWS, Constants.COLUMNS);
 
 		createWord ();
 		colorBackground ();
+		ControllerInput.win = false;
 	}
 
-	public static void setPausePanel(bool set) {
-		PausePanel.SetActive(set);
-	}
 
-	public static List<GameObject> getBoard() {
+	
+	public List<GameObject> getBoard() {
 		return BOARD;
 	}
 	
@@ -146,8 +171,7 @@ public class CreateBoard : MonoBehaviour {
 		try {
 			// create a list of random tiles
 			for (int i=0; i < (Constants.ROWS*Constants.COLUMNS)-2; i++) {
-				Emoji emoji = pickRandomEmoji ();
-				//someValues
+				Emoji emoji = pickRandomEmoji();
 				someValues.Add(emoji);
 			}
 		}
@@ -174,12 +198,27 @@ public class CreateBoard : MonoBehaviour {
 
 	List<Emoji> pickRandomWord() {
 		// pick a word
+		bool okay = false;
 		int rand = UnityEngine.Random.Range (0, LoadSave.words.Count - 1);
+
+		while (!okay) {
+			okay = true;
+			rand = UnityEngine.Random.Range (0, LoadSave.words.Count - 1);
+
+			for (int i=0; i < alreadyPicked.Count; i++) {
+				if (rand == alreadyPicked[i]) {
+				    okay = false;
+				    break;
+				}
+			}
+	    }
+
+		alreadyPicked.Add (rand);
 		string myRandomWord = LoadSave.words[rand].getComplete();
 
 		randomWord = LoadSave.words[rand];
 
-		List<Emoji> emojiList = LoadSave.words [rand].getEmojis();
+		List<Emoji> emojiList = LoadSave.words[rand].getEmojis();
 		for (int i=0; i < emojiList.Count; i++) {
 			emojiList[i].getWord();
 			emojiList[i].getFilename();
@@ -188,14 +227,39 @@ public class CreateBoard : MonoBehaviour {
 	}
 
 	Emoji pickRandomEmoji() {
+		Emoji e = new Emoji();
+		string myRandomEmoji = "";
+		string emojiList = "";
 		// pick a word
-		int rand = UnityEngine.Random.Range (0, LoadSave.emojis.Count - 1);
-		string myRandomEmoji = LoadSave.emojis[rand].getWord();
-		string emojiList = LoadSave.emojis [rand].getFilename();
 
-		// make sure it is not a duplicate of something already picked or random word
+		bool okay = false;
 
-		Emoji e = new Emoji ();
+		while (!okay) {
+			okay = true;
+			int rand = UnityEngine.Random.Range (0, LoadSave.emojis.Count - 1);
+			myRandomEmoji = LoadSave.emojis [rand].getWord ();
+			emojiList = LoadSave.emojis [rand].getFilename ();
+
+			// make sure it is not a duplicate of something already picked or random word
+
+			// make sure it's not the two cards we need
+			if (wordValues.Count > 1 && (wordValues [0].getFilename () == emojiList || wordValues [1].getFilename () == emojiList)) {
+				//Debug.Log ("try again, it's a card you need");
+				okay = false;
+				//e = pickRandomEmoji ();
+			}
+			// make sure it's not already on the board (found this doesn't work)
+			for (int i=0; i < someValues.Count; i++) {
+				//Debug.Log (someValues[i].getFilename() + " " + emojiList);
+				if (someValues[i].getFilename() == emojiList) {
+					// repeat, try again
+					//Debug.Log ("try again, already on board");
+					//e = pickRandomEmoji ();
+					okay = false;
+				}
+			}
+
+		}
 		e.setWord (myRandomEmoji);
 		e.setFilename (emojiList);
 
@@ -207,11 +271,13 @@ public class CreateBoard : MonoBehaviour {
 		GameObject card = null;
 		try {
 			card = (GameObject)Instantiate (Resources.Load<GameObject> ("Card"));
-			card.transform.position = new Vector3 (xoffset, yoffset, ZCHANGE);
+			card.transform.localPosition = new Vector3 (xoffset, yoffset, ZCHANGE);
 			card.GetComponent<Card>().myCard = row+"_"+column+"_card";
 			card.GetComponent<Card>().row = row;
 			card.GetComponent<Card>().column = column;
 			card.GetComponent<Card>().value = someValues[index].getFilename();
+			card.GetComponent<Card>().thisName = someValues[index].getWord();
+			card.GetComponent<Card>().name = someValues[index].getWord();
 			BOARD.Add (card);
 
 			for (int i=0; i < wordValues.Count; i++) {
@@ -231,9 +297,33 @@ public class CreateBoard : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (reset) {
-			StartAgain();
+			//Debug.Log ("restart");
+			//StartAgain();
+
+			LoadSave.save();
+			PlayIt.TYPE = PlayIt.MENU;
+			//Application.LoadLevel("title");
+			Panels.setGridPanel (false);
+			StartCoroutine(loadScene("title"));
 			reset = false;
-			Application.LoadLevel("title");
 		}
+	}
+
+	public IEnumerator loadScene(string scene) {
+		int temp = PlayIt.TYPE;
+		PlayIt.TYPE = PlayIt.LOADING;
+		smiley.transform.position = new Vector3(0f, 0f, 0f);
+		outline.transform.position = new Vector3(100f, 0f, 0f);
+		GameObject wordObject = GameObject.Find ("Word");
+		if (wordObject != null) wordObject.GetComponent<TextMesh>().text = "";
+		GameObject pause = GameObject.Find ("pause");
+		if (pause != null) pause.transform.position = new Vector3(100f, 0f, 0f);
+		//yield return new WaitForSeconds(5f);
+		PlayIt.TYPE = temp;
+		AsyncOperation async = Application.LoadLevelAsync (scene);
+		yield return async;
+		smiley.transform.position = new Vector3(100, 0f, 0f);
+		outline.transform.position = new Vector3(0f, 0f, 0f);
+		yield return new WaitForSeconds(0);
 	}
 }

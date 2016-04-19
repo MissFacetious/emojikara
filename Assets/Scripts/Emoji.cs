@@ -6,6 +6,7 @@ public class Emoji : MonoBehaviour {
 	private string word;
 	private string filename;
 	Color color;
+	public bool used = false;
 
 	public void setWord(string word) {
 		this.word = word;
@@ -57,6 +58,27 @@ public class Emoji : MonoBehaviour {
 		}
 		if (myColor == "BLACK") {
 			c = Constants.BLACK;
+		}
+		if (myColor == "LIGHTGRAY") {
+			c = Constants.LIGHTGRAY;
+		}
+		if (myColor == "GOLD") {
+			c = Constants.GOLD;
+		}
+		if (myColor == "PURPLE") {
+			c = Constants.PURPLE;
+		}
+		if (myColor == "MAROON") {
+			c = Constants.MAROON;
+		}
+		if (myColor == "PINK") {
+			c = Constants.PINK;
+		}
+		if (myColor == "SKYBLUE") {
+			c = Constants.SKYBLUE;
+		}
+		if (myColor == "LIGHTBROWN") {
+			c = Constants.LIGHTBROWN;
 		}
 		color = c;
 	}
